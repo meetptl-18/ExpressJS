@@ -4,13 +4,15 @@ async function handlenewShortUrl(req, res) {
   const body = req.body;
   if (!body.url) return res.status(400).json({ Msg: "URL required" });
   const shortId = shortid();
+
   await URL.create({
     ShortId: shortId,
     redirectURL: body.url,
     visitedHistroy: [],
+    createdBy: req.user._id,
   });
-  const allUrls = await URL.find({});
-  return res.render("home", { id: shortId, urls: allUrls });
+
+  return res.render("home", { id: shortId });
 }
 
 async function handleGetRedirectUrl(req, res) {
@@ -19,9 +21,12 @@ async function handleGetRedirectUrl(req, res) {
     { ShortId: shortID },
     { $push: { visitedHistroy: { timestamp: Date.now() } } },
   );
+  if (!entry) {
+    return res.status(404).send("URL not found");
+  }
   res.redirect(entry.redirectURL);
 }
-async function handleGetAnaytics(req, res) {
+async function handleGetAnalytics(req, res) {
   const shortId = req.params.shortid;
   const result = await URL.findOne({ ShortId: shortId });
   res.json({
@@ -30,4 +35,8 @@ async function handleGetAnaytics(req, res) {
   });
 }
 
-module.exports = { handlenewShortUrl, handleGetAnaytics, handleGetRedirectUrl };
+module.exports = {
+  handlenewShortUrl,
+  handleGetAnalytics,
+  handleGetRedirectUrl,
+};
